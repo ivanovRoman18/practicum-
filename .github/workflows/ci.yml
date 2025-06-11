@@ -1,0 +1,23 @@
+name: Main CI-pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind gcc make
+          
+      - name: Checkstyle
+        run: make check_fmt
+ 
+      - name: Test
+        run: make test
