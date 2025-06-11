@@ -1,31 +1,28 @@
-SRCS = $(wildcard *_test.c)
-PRGS = $(patsubst %.c, %, $(SRCS))
-LIBS = $(patsubst %_test.c, %.a, $(SRCS))
+SUBDIRS := $(shell find . -mindepth 1 -maxdepth 2 -type d -exec test -e '{}/Makefile' \; -print)
 
-test: $(PRGS)
-	for test in $(PRGS); do \
-		echo "Running $$test"; \
-		valgrind --leak-check=full --errors-for-leak-kinds=all --undef-value-errors=no --error-exitcode=1 \
-		         ./$$test || exit 1; \
-	done;
+all: build
 
-clear: 
-	rm -rf *.o *.a *_test
+build:
+	for dir in $(SUBDIRS); do \
+		make -C $$dir || exit 1; \
+	done
 
-fmt: 
-	clang-format -style=Microsoft -i `find -regex ".+\.[ch]"`
+test:
+	for dir in $(SUBDIRS); do \
+		make -C $$dir test || exit 1; \
+	done
+
+clear:
+	for dir in $(SUBDIRS); do \
+		make -C $$dir clear; \
+	done
+
+fmt:
+	for dir in $(SUBDIRS); do \
+		make -C $$dir fmt; \
+	done
 
 check_fmt:
-	clang-format -style=Microsoft -i `find -regex ".+\.[ch]"` --dry-run --Werror
-
-%.o: %.c %.h
-	gcc -g -c $< -o $@
-
-%.a: %.o
-	ar rc $@ $^
-
-%_test.o: %_test.c
-	gcc -g -c $^ -o $@
-
-%_test: %_test.o $(LIBS)
-	gcc -g -static -o $@ $^ -lm
+	for dir in $(SUBDIRS); do \
+		make -C $$dir check_fmt; \
+	done
